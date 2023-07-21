@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
+#include "AGCommonTypes.h"
+#include "AbilitySystemComponent.h"
 #include "GameFramework/Character.h"
 #include "Abilities/GameplayAbility.h"
 #include "InputActionValue.h"
@@ -64,6 +66,8 @@ protected:
 	// To add mapping context
 	virtual void BeginPlay();
 
+	virtual void PostInitializeComponents() override;
+	
 public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -73,31 +77,41 @@ public:
 	////////////////////////////////////////////////////////////
 	// Gameplay ability
 protected:
-	void InitializeAttributes();
 	void GiveAbilities();
 	void ApplyStartUpEffects();
 
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "GAS")
-	TSubclassOf<UGameplayEffect> DefaultAttributeSet;
-
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "GAS")
-	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
-
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "GAS")
-	TArray<TSubclassOf<UGameplayEffect>> DefaultEffects;
-
 	UPROPERTY(EditDefaultsOnly)
 	UAGAbilitySystemComponentBase* AbilitySystemComponent;
 
 	UPROPERTY(Transient)
 	UAGAttributeSetBase* AttributeSet;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CharacterData)
+	FCharacterData CharacterData;
+
+	UFUNCTION()
+	void OnRep_CharacterData();
+
+	UFUNCTION()
+	virtual void InitFromCharacterData(const FCharacterData& InCharacterData, bool bFromReplication = false);
+
+	UPROPERTY(EditDefaultsOnly)
+	class UCharacterDataAsset* CharacterDataAsset;
 	
 public:
 	bool ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> Effect, FGameplayEffectContextHandle InEffectContext);
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps ) const override;
+
+	UFUNCTION(BlueprintCallable)
+	FCharacterData GetCharacterData() const;
+
+	UFUNCTION(BlueprintCallable)
+	void SetCharacterData(const FCharacterData& InCharacterData);
 };
 

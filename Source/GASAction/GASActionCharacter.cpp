@@ -10,10 +10,11 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 
-#include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Ability/AGAttributeSetBase.h"
 #include "Ability/AGAbilitySystemComponentBase.h"
+#include "DataAsset/CharacterDataAsset.h"
+#include "Net/UnrealNetwork.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -78,25 +79,24 @@ void AGASActionCharacter::BeginPlay()
 	}
 }
 
-//////////////////////////////////////////////////////////////
-// Gameplay ability
-
-void AGASActionCharacter::InitializeAttributes()
+void AGASActionCharacter::PostInitializeComponents()
 {
-	if(GetLocalRole() == ROLE_Authority && DefaultAttributeSet && AttributeSet)
-	{
-		FGameplayEffectContextHandle EffectContextHandle = AbilitySystemComponent->MakeEffectContext();
-		EffectContextHandle.AddSourceObject(this);
+	Super::PostInitializeComponents();
 
-		ApplyGameplayEffectToSelf(DefaultAttributeSet, EffectContextHandle);
+	if(IsValid(CharacterDataAsset))
+	{
+		SetCharacterData(CharacterDataAsset->CharacterData);
 	}
 }
+
+//////////////////////////////////////////////////////////////
+// Gameplay ability
 
 void AGASActionCharacter::GiveAbilities()
 {
 	if(HasAuthority() && AbilitySystemComponent)
 	{
-		for(auto DefaultAbility : DefaultAbilities)
+		for(auto DefaultAbility : CharacterData.Abilities)
 		{
 			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(DefaultAbility));
 		}
@@ -105,12 +105,12 @@ void AGASActionCharacter::GiveAbilities()
 
 void AGASActionCharacter::ApplyStartUpEffects()
 {
-	if(GetLocalRole() == ROLE_Authority && DefaultAttributeSet && AttributeSet)
+	if(GetLocalRole() == ROLE_Authority)
 	{
 		FGameplayEffectContextHandle EffectContextHandle = AbilitySystemComponent->MakeEffectContext();
 		EffectContextHandle.AddSourceObject(this);
 
-		for(auto CharacterEffect : DefaultEffects)
+		for(auto CharacterEffect : CharacterData.Effects)
 		{
 			ApplyGameplayEffectToSelf(CharacterEffect, EffectContextHandle);
 		}
@@ -122,8 +122,7 @@ void AGASActionCharacter::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
-
-	InitializeAttributes();
+	
 	GiveAbilities();
 	ApplyStartUpEffects();
 }
@@ -133,7 +132,28 @@ void AGASActionCharacter::OnRep_PlayerState()
 	Super::OnRep_PlayerState();
 
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
-	InitializeAttributes();
+}
+
+void AGASActionCharacter::OnRep_CharacterData()
+{
+	InitFromCharacterData(CharacterData, true);
+}
+
+void AGASActionCharacter::InitFromCharacterData(const FCharacterData& InCharacterData, bool bFromReplication)
+{
+	
+}
+
+FCharacterData AGASActionCharacter::GetCharacterData() const
+{
+	return CharacterData;
+}
+
+void AGASActionCharacter::SetCharacterData(const FCharacterData& InCharacterData)
+{
+	CharacterData = InCharacterData;
+
+	InitFromCharacterData(CharacterData);
 }
 
 bool AGASActionCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> Effect,
@@ -159,6 +179,13 @@ bool AGASActionCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect>
 UAbilitySystemComponent* AGASActionCharacter::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
+}
+
+void AGASActionCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps ) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps );
+
+	DOREPLIFETIME(AGASActionCharacter, CharacterData);
 }
 
 //////////////////////////////////////////////////////////////////////////
