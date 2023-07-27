@@ -9,7 +9,7 @@
 #include "GameFramework/Character.h"
 #include "Abilities/GameplayAbility.h"
 #include "InputActionValue.h"
-#include "GASActionCharacter.generated.h"
+#include "AGActionCharacter.generated.h"
 
 class UAGAbilitySystemComponentBase;
 class UAGAttributeSetBase;
@@ -18,7 +18,7 @@ class UGameplayEffect;
 class UGameplayAbility;
 
 UCLASS(config=Game)
-class AGASActionCharacter : public ACharacter, public IAbilitySystemInterface
+class AAGActionCharacter : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -47,7 +47,7 @@ class AGASActionCharacter : public ACharacter, public IAbilitySystemInterface
 	class UInputAction* LookAction;
 
 public:
-	AGASActionCharacter();
+	AAGActionCharacter();
 	
 
 protected:
@@ -67,6 +67,8 @@ protected:
 	virtual void BeginPlay();
 
 	virtual void PostInitializeComponents() override;
+
+	AAGActionCharacter(const FObjectInitializer& ObjectInitializer);
 	
 public:
 	/** Returns CameraBoom subobject **/

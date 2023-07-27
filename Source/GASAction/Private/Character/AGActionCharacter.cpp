@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "GASActionCharacter.h"
+#include "Character/AGActionCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -13,6 +13,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Ability/AGAttributeSetBase.h"
 #include "Ability/AGAbilitySystemComponentBase.h"
+#include "ActorComponent/AGCharacterMovementComponent.h"
 #include "DataAsset/CharacterDataAsset.h"
 #include "Net/UnrealNetwork.h"
 
@@ -20,9 +21,40 @@
 //////////////////////////////////////////////////////////////////////////
 // AGASActionCharacter
 
-AGASActionCharacter::AGASActionCharacter()
+AAGActionCharacter::AAGActionCharacter()
 {
-	// Set size for collision capsule
+
+}
+
+void AAGActionCharacter::BeginPlay()
+{
+	// Call the base class  
+	Super::BeginPlay();
+
+	//Add Input Mapping Context
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
+	}
+}
+
+void AAGActionCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if(IsValid(CharacterDataAsset))
+	{
+		SetCharacterData(CharacterDataAsset->CharacterData);
+	}
+}
+
+AAGActionCharacter::AAGActionCharacter(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UAGCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
+{
+		// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 		
 	// Don't rotate when the controller rotates. Let that just affect the camera.
@@ -64,35 +96,10 @@ AGASActionCharacter::AGASActionCharacter()
 	AttributeSet = CreateDefaultSubobject<UAGAttributeSetBase>(TEXT("AttributSet"));
 }
 
-void AGASActionCharacter::BeginPlay()
-{
-	// Call the base class  
-	Super::BeginPlay();
-
-	//Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
-}
-
-void AGASActionCharacter::PostInitializeComponents()
-{
-	Super::PostInitializeComponents();
-
-	if(IsValid(CharacterDataAsset))
-	{
-		SetCharacterData(CharacterDataAsset->CharacterData);
-	}
-}
-
 //////////////////////////////////////////////////////////////
 // Gameplay ability
 
-void AGASActionCharacter::GiveAbilities()
+void AAGActionCharacter::GiveAbilities()
 {
 	if(HasAuthority() && AbilitySystemComponent)
 	{
@@ -103,7 +110,7 @@ void AGASActionCharacter::GiveAbilities()
 	}
 }
 
-void AGASActionCharacter::ApplyStartUpEffects()
+void AAGActionCharacter::ApplyStartUpEffects()
 {
 	if(GetLocalRole() == ROLE_Authority)
 	{
@@ -117,7 +124,7 @@ void AGASActionCharacter::ApplyStartUpEffects()
 	}
 }
 
-void AGASActionCharacter::PossessedBy(AController* NewController)
+void AAGActionCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
@@ -127,36 +134,36 @@ void AGASActionCharacter::PossessedBy(AController* NewController)
 	ApplyStartUpEffects();
 }
 
-void AGASActionCharacter::OnRep_PlayerState()
+void AAGActionCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 }
 
-void AGASActionCharacter::OnRep_CharacterData()
+void AAGActionCharacter::OnRep_CharacterData()
 {
 	InitFromCharacterData(CharacterData, true);
 }
 
-void AGASActionCharacter::InitFromCharacterData(const FCharacterData& InCharacterData, bool bFromReplication)
+void AAGActionCharacter::InitFromCharacterData(const FCharacterData& InCharacterData, bool bFromReplication)
 {
 	
 }
 
-FCharacterData AGASActionCharacter::GetCharacterData() const
+FCharacterData AAGActionCharacter::GetCharacterData() const
 {
 	return CharacterData;
 }
 
-void AGASActionCharacter::SetCharacterData(const FCharacterData& InCharacterData)
+void AAGActionCharacter::SetCharacterData(const FCharacterData& InCharacterData)
 {
 	CharacterData = InCharacterData;
 
 	InitFromCharacterData(CharacterData);
 }
 
-bool AGASActionCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> Effect,
+bool AAGActionCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> Effect,
                                                     FGameplayEffectContextHandle InEffectContext)
 {
 	if(!Effect.Get())
@@ -176,16 +183,16 @@ bool AGASActionCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect>
 	return false;
 }
 
-UAbilitySystemComponent* AGASActionCharacter::GetAbilitySystemComponent() const
+UAbilitySystemComponent* AAGActionCharacter::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
 }
 
-void AGASActionCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps ) const
+void AAGActionCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps ) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps );
 
-	DOREPLIFETIME(AGASActionCharacter, CharacterData);
+	DOREPLIFETIME(AAGActionCharacter, CharacterData);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -193,7 +200,7 @@ void AGASActionCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 //////////////////////////////////////////////////////////////////////////
 // Input
 
-void AGASActionCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
+void AAGActionCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
@@ -203,16 +210,16 @@ void AGASActionCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 		//Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AGASActionCharacter::Move);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::Move);
 
 		//Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGASActionCharacter::Look);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::Look);
 
 	}
 
 }
 
-void AGASActionCharacter::Move(const FInputActionValue& Value)
+void AAGActionCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -235,7 +242,7 @@ void AGASActionCharacter::Move(const FInputActionValue& Value)
 	}
 }
 
-void AGASActionCharacter::Look(const FInputActionValue& Value)
+void AAGActionCharacter::Look(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D LookAxisVector = Value.Get<FVector2D>();

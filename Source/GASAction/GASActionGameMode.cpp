@@ -1,7 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "GASActionGameMode.h"
-#include "GASActionCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 
 AGASActionGameMode::AGASActionGameMode()
