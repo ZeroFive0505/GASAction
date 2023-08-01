@@ -68,6 +68,8 @@ protected:
 
 	virtual void PostInitializeComponents() override;
 
+	virtual void PawnClientRestart() override;
+
 	AAGActionCharacter(const FObjectInitializer& ObjectInitializer);
 	
 public:
@@ -102,6 +104,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	class UCharacterDataAsset* CharacterDataAsset;
+
+	UPROPERTY(BlueprintReadOnly)
+	class UFootStepComponent* FootStepComponent;
 	
 public:
 	bool ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> Effect, FGameplayEffectContextHandle InEffectContext);
@@ -115,5 +120,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void SetCharacterData(const FCharacterData& InCharacterData);
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE class UFootStepComponent* GetFootStepComponent() const { return FootStepComponent; }
 };
 

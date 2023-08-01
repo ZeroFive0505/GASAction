@@ -14,6 +14,7 @@
 #include "Ability/AGAttributeSetBase.h"
 #include "Ability/AGAbilitySystemComponentBase.h"
 #include "ActorComponent/AGCharacterMovementComponent.h"
+#include "ActorComponent/FootStepComponent.h"
 #include "DataAsset/CharacterDataAsset.h"
 #include "Net/UnrealNetwork.h"
 
@@ -23,7 +24,6 @@
 
 AAGActionCharacter::AAGActionCharacter()
 {
-
 }
 
 void AAGActionCharacter::BeginPlay()
@@ -34,7 +34,8 @@ void AAGActionCharacter::BeginPlay()
 	//Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<
+			UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
@@ -45,18 +46,34 @@ void AAGActionCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	if(IsValid(CharacterDataAsset))
+	if (IsValid(CharacterDataAsset))
 	{
 		SetCharacterData(CharacterDataAsset->CharacterData);
 	}
 }
 
-AAGActionCharacter::AAGActionCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer.SetDefaultSubobjectClass<UAGCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
+void AAGActionCharacter::PawnClientRestart()
 {
-		// Set size for collision capsule
+	Super::PawnClientRestart();
+
+	if(APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		if(UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			Subsystem->ClearAllMappings();
+
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
+	}
+}
+
+AAGActionCharacter::AAGActionCharacter(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UAGCharacterMovementComponent>(
+		ACharacter::CharacterMovementComponentName))
+{
+	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-		
+
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -82,7 +99,8 @@ AAGActionCharacter::AAGActionCharacter(const FObjectInitializer& ObjectInitializ
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
+	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	// Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
@@ -94,6 +112,8 @@ AAGActionCharacter::AAGActionCharacter(const FObjectInitializer& ObjectInitializ
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
 	AttributeSet = CreateDefaultSubobject<UAGAttributeSetBase>(TEXT("AttributSet"));
+
+	FootStepComponent = CreateDefaultSubobject<UFootStepComponent>(TEXT("FootStepComponent"));
 }
 
 //////////////////////////////////////////////////////////////
@@ -101,9 +121,9 @@ AAGActionCharacter::AAGActionCharacter(const FObjectInitializer& ObjectInitializ
 
 void AAGActionCharacter::GiveAbilities()
 {
-	if(HasAuthority() && AbilitySystemComponent)
+	if (HasAuthority() && AbilitySystemComponent)
 	{
-		for(auto DefaultAbility : CharacterData.Abilities)
+		for (auto DefaultAbility : CharacterData.Abilities)
 		{
 			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(DefaultAbility));
 		}
@@ -112,12 +132,12 @@ void AAGActionCharacter::GiveAbilities()
 
 void AAGActionCharacter::ApplyStartUpEffects()
 {
-	if(GetLocalRole() == ROLE_Authority)
+	if (GetLocalRole() == ROLE_Authority)
 	{
 		FGameplayEffectContextHandle EffectContextHandle = AbilitySystemComponent->MakeEffectContext();
 		EffectContextHandle.AddSourceObject(this);
 
-		for(auto CharacterEffect : CharacterData.Effects)
+		for (auto CharacterEffect : CharacterData.Effects)
 		{
 			ApplyGameplayEffectToSelf(CharacterEffect, EffectContextHandle);
 		}
@@ -129,7 +149,7 @@ void AAGActionCharacter::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
-	
+
 	GiveAbilities();
 	ApplyStartUpEffects();
 }
@@ -148,7 +168,6 @@ void AAGActionCharacter::OnRep_CharacterData()
 
 void AAGActionCharacter::InitFromCharacterData(const FCharacterData& InCharacterData, bool bFromReplication)
 {
-	
 }
 
 FCharacterData AAGActionCharacter::GetCharacterData() const
@@ -164,18 +183,19 @@ void AAGActionCharacter::SetCharacterData(const FCharacterData& InCharacterData)
 }
 
 bool AAGActionCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> Effect,
-                                                    FGameplayEffectContextHandle InEffectContext)
+                                                   FGameplayEffectContextHandle InEffectContext)
 {
-	if(!Effect.Get())
+	if (!Effect.Get())
 	{
 		return false;
 	}
 
 	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(Effect, 1, InEffectContext);
 
-	if(SpecHandle.IsValid())
+	if (SpecHandle.IsValid())
 	{
-		FActiveGameplayEffectHandle ActiveGameplayEffectHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		FActiveGameplayEffectHandle ActiveGameplayEffectHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(
+			*SpecHandle.Data.Get());
 
 		return ActiveGameplayEffectHandle.WasSuccessfullyApplied();
 	}
@@ -188,9 +208,9 @@ UAbilitySystemComponent* AAGActionCharacter::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
-void AAGActionCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps ) const
+void AAGActionCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps );
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AAGActionCharacter, CharacterData);
 }
@@ -203,20 +223,48 @@ void AAGActionCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 void AAGActionCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
 	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
+	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+	{
 		//Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
+	
 		//Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::Move);
-
+	
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::Look);
-
 	}
 
+	// // Set up action bindings
+	// if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+	// {
+	// 	if(AGMoveForward)
+	// 	{
+	// 		EnhancedInputComponent->BindAction(AGMoveForward, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnMoveForward);
+	// 	}
+	//
+	// 	if(AGMoveSide)
+	// 	{
+	// 		EnhancedInputComponent->BindAction(AGMoveSide, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnMoveSide);
+	// 	}
+	//
+	// 	if(AGTurn)
+	// 	{
+	// 		EnhancedInputComponent->BindAction(AGTurn, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnTurn);
+	// 	}
+	//
+	// 	if(AGLookUp)
+	// 	{
+	// 		EnhancedInputComponent->BindAction(AGLookUp, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnLookUp);
+	// 	}
+	//
+	// 	if(AGJumpAction)
+	// 	{
+	// 		EnhancedInputComponent->BindAction(AGJumpAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnJump);
+	// 		EnhancedInputComponent->BindAction(AGJumpAction, ETriggerEvent::Completed, this, &AAGActionCharacter::OnJumpEnd);
+	// 	}
+	// }
 }
 
 void AAGActionCharacter::Move(const FInputActionValue& Value)
@@ -232,7 +280,7 @@ void AAGActionCharacter::Move(const FInputActionValue& Value)
 
 		// get forward vector
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	
+
 		// get right vector 
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
@@ -254,7 +302,3 @@ void AAGActionCharacter::Look(const FInputActionValue& Value)
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
 }
-
-
-
-
