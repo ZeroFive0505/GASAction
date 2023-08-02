@@ -4,18 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "Ability/AGGameplayAbility.h"
-#include "AG_JumpAbility.generated.h"
+#include "GA_JumpAbility.generated.h"
 
 
 class UGameplayEffect;
 
 UCLASS()
-class GASACTION_API UAG_JumpAbility : public UAGGameplayAbility
+class GASACTION_API UGA_JumpAbility : public UAGGameplayAbility
 {
 	GENERATED_BODY()
 
 public:
-	UAG_JumpAbility();
+	UGA_JumpAbility();
 
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const override;
 

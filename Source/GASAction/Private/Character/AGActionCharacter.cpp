@@ -94,6 +94,22 @@ void AAGActionCharacter::OnDeactivateCrouchAbility()
 	}
 }
 
+void AAGActionCharacter::OnActivateSprintAbility()
+{
+	if(AbilitySystemComponent)
+	{
+		AbilitySystemComponent->TryActivateAbilitiesByTag(SprintTags);
+	}
+}
+
+void AAGActionCharacter::OnDeactivateSprintAbility()
+{
+	if(AbilitySystemComponent)
+	{
+		AbilitySystemComponent->CancelAbilities(&SprintTags);
+	}
+}
+
 void AAGActionCharacter::StopJumping()
 {
 	// Super::StopJumping();
@@ -192,6 +208,8 @@ AAGActionCharacter::AAGActionCharacter(const FObjectInitializer& ObjectInitializ
 
 	AttributeSet = CreateDefaultSubobject<UAGAttributeSetBase>(TEXT("AttributSet"));
 
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetMovementSpeedAttribute()).AddUObject(this, &AAGActionCharacter::OnMovementSpeedChanged);
+
 	FootStepComponent = CreateDefaultSubobject<UFootStepComponent>(TEXT("FootStepComponent"));
 }
 
@@ -261,6 +279,11 @@ void AAGActionCharacter::SetCharacterData(const FCharacterData& InCharacterData)
 	InitFromCharacterData(CharacterData);
 }
 
+void AAGActionCharacter::OnMovementSpeedChanged(const FOnAttributeChangeData& Data)
+{
+	GetCharacterMovement()->MaxWalkSpeed = Data.NewValue;
+}
+
 bool AAGActionCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> Effect,
                                                    FGameplayEffectContextHandle InEffectContext)
 {
@@ -315,8 +338,12 @@ void AAGActionCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::Look);
 
 		// Crouch
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnActivateCrouchAbility);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &AAGActionCharacter::OnActivateCrouchAbility);
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AAGActionCharacter::OnDeactivateCrouchAbility);
+
+		// Sprint
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AAGActionCharacter::OnActivateSprintAbility);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AAGActionCharacter::OnDeactivateSprintAbility);
 	}
 }
 

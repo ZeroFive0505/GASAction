@@ -40,7 +40,7 @@ void UAGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 
 	if(IsInstantiated())
 	{
-		for(auto GameplayEffect : OnGoingEffectsToJustApplyOnStart)
+		for(auto GameplayEffect : OnGoingEffectsToRemoveOnEnd)
 		{
 			if(!GameplayEffect.Get())
 			{

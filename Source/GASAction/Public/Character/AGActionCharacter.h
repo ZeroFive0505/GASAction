@@ -49,6 +49,9 @@ class AAGActionCharacter : public ACharacter, public IAbilitySystemInterface
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* CrouchAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputAction* SprintAction;
+
 public:
 	AAGActionCharacter();
 	
@@ -78,6 +81,10 @@ protected:
 	virtual void OnActivateCrouchAbility();
 
 	virtual void OnDeactivateCrouchAbility();
+
+	virtual void OnActivateSprintAbility();
+
+	virtual void OnDeactivateSprintAbility();
 	
 	virtual void StopJumping() override;
 
@@ -89,7 +96,7 @@ protected:
 
 	AAGActionCharacter(const FObjectInitializer& ObjectInitializer);
 
-	
+
 public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -139,10 +146,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	FGameplayTagContainer CrouchTags;
 
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTagContainer SprintTags;
+
 	// Gameplay effects
 protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UGameplayEffect> CrouchStateEffect;
+
+	// Delegates
+protected:
+	FDelegateHandle MaxMovementSpeedChangeDelegateHandle;
 	
 public:
 	bool ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> Effect, FGameplayEffectContextHandle InEffectContext);
@@ -159,5 +173,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE class UFootStepComponent* GetFootStepComponent() const { return FootStepComponent; }
+
+	void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
 };
 

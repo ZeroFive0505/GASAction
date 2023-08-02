@@ -1,19 +1,19 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Ability/AG_JumpAbility.h"
+#include "Ability/GA_JumpAbility.h"
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemLog.h"
 #include "GameFramework/Character.h"
 
-UAG_JumpAbility::UAG_JumpAbility()
+UGA_JumpAbility::UGA_JumpAbility()
 {
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::NonInstanced;
 }
 
-bool UAG_JumpAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle,
+bool UGA_JumpAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags,
 	const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
 {
@@ -26,7 +26,7 @@ bool UAG_JumpAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle
 	return Character->CanJump();
 }
 
-void UAG_JumpAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
+void UGA_JumpAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
