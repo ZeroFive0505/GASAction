@@ -21,6 +21,13 @@ protected:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintThreadSafe))
 	class UAnimSequenceBase* GetIdleAnimationAsset() const;
 
+	UFUNCTION(BlueprintCallable, meta = (BlueprintThreadSafe))
+	class UBlendSpace* GetCrouchLocomotionBlendSpace() const;
+	
+	UFUNCTION(BlueprintCallable, meta = (BlueprintThreadSafe))
+	class UAnimSequenceBase* GetCrouchIdleAnimationAsset() const;
+
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Animation")
 	class UCharacterAnimDataAsset* DefaultCharacterAnimDataAsset;
 };

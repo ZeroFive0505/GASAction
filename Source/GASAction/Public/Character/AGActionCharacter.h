@@ -46,6 +46,9 @@ class AAGActionCharacter : public ACharacter, public IAbilitySystemInterface
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputAction* CrouchAction;
+
 public:
 	AAGActionCharacter();
 	
@@ -70,7 +73,22 @@ protected:
 
 	virtual void PawnClientRestart() override;
 
+	virtual void ActivateJumpAbility();
+
+	virtual void OnActivateCrouchAbility();
+
+	virtual void OnDeactivateCrouchAbility();
+	
+	virtual void StopJumping() override;
+
+	virtual void Landed(const FHitResult& Hit) override;
+
+	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+
+	virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+
 	AAGActionCharacter(const FObjectInitializer& ObjectInitializer);
+
 	
 public:
 	/** Returns CameraBoom subobject **/
@@ -107,6 +125,24 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	class UFootStepComponent* FootStepComponent;
+
+	// Gameplay Events
+protected:
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTag JumpEventTag;
+
+	// Gameplay Tags
+protected:
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTagContainer InAirTags;
+
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTagContainer CrouchTags;
+
+	// Gameplay effects
+protected:
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UGameplayEffect> CrouchStateEffect;
 	
 public:
 	bool ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> Effect, FGameplayEffectContextHandle InEffectContext);

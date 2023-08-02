@@ -11,6 +11,7 @@
 #include "EnhancedInputSubsystems.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystemLog.h"
 #include "Ability/AGAttributeSetBase.h"
 #include "Ability/AGAbilitySystemComponentBase.h"
 #include "ActorComponent/AGCharacterMovementComponent.h"
@@ -64,6 +65,84 @@ void AAGActionCharacter::PawnClientRestart()
 
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
+	}
+}
+
+void AAGActionCharacter::ActivateJumpAbility()
+{
+	FGameplayEventData Payload;
+
+	Payload.Instigator = this;
+	Payload.EventTag = JumpEventTag;
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, JumpEventTag, Payload);
+}
+
+void AAGActionCharacter::OnActivateCrouchAbility()
+{
+	if(AbilitySystemComponent)
+	{
+		AbilitySystemComponent->TryActivateAbilitiesByTag(CrouchTags);
+	}
+}
+
+void AAGActionCharacter::OnDeactivateCrouchAbility()
+{
+	if(AbilitySystemComponent)
+	{
+		AbilitySystemComponent->CancelAbilities(&CrouchTags);
+	}
+}
+
+void AAGActionCharacter::StopJumping()
+{
+	// Super::StopJumping();
+}
+
+void AAGActionCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	if(AbilitySystemComponent)
+	{
+		AbilitySystemComponent->RemoveActiveEffectsWithTags(InAirTags);
+	}
+}
+
+void AAGActionCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+
+	if(!CrouchStateEffect.Get())
+	{
+		return;
+	}
+
+	if(AbilitySystemComponent)
+	{
+		FGameplayEffectContextHandle EffectContextHandle = AbilitySystemComponent->MakeEffectContext();
+		
+		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(CrouchStateEffect, 1.0f, EffectContextHandle);
+
+		if(SpecHandle.IsValid())
+		{
+			FActiveGameplayEffectHandle ActiveGameplayEffectHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+			if(!ActiveGameplayEffectHandle.WasSuccessfullyApplied())
+			{
+				ABILITY_LOG(Log, TEXT("Ability %s failed to apply crouch effect %s"), *GetName(), *GetNameSafe(CrouchStateEffect));
+			}
+		}
+	}
+}
+
+void AAGActionCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+
+	if(AbilitySystemComponent && CrouchStateEffect.Get())
+	{
+		AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(CrouchStateEffect, AbilitySystemComponent);
 	}
 }
 
@@ -226,7 +305,7 @@ void AAGActionCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		//Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::ActivateJumpAbility);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 	
 		//Moving
@@ -234,37 +313,11 @@ void AAGActionCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 	
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::Look);
-	}
 
-	// // Set up action bindings
-	// if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
-	// {
-	// 	if(AGMoveForward)
-	// 	{
-	// 		EnhancedInputComponent->BindAction(AGMoveForward, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnMoveForward);
-	// 	}
-	//
-	// 	if(AGMoveSide)
-	// 	{
-	// 		EnhancedInputComponent->BindAction(AGMoveSide, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnMoveSide);
-	// 	}
-	//
-	// 	if(AGTurn)
-	// 	{
-	// 		EnhancedInputComponent->BindAction(AGTurn, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnTurn);
-	// 	}
-	//
-	// 	if(AGLookUp)
-	// 	{
-	// 		EnhancedInputComponent->BindAction(AGLookUp, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnLookUp);
-	// 	}
-	//
-	// 	if(AGJumpAction)
-	// 	{
-	// 		EnhancedInputComponent->BindAction(AGJumpAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnJump);
-	// 		EnhancedInputComponent->BindAction(AGJumpAction, ETriggerEvent::Completed, this, &AAGActionCharacter::OnJumpEnd);
-	// 	}
-	// }
+		// Crouch
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnActivateCrouchAbility);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AAGActionCharacter::OnDeactivateCrouchAbility);
+	}
 }
 
 void AAGActionCharacter::Move(const FInputActionValue& Value)
