@@ -15,6 +15,7 @@
 #include "Ability/AGAttributeSetBase.h"
 #include "Ability/AGAbilitySystemComponentBase.h"
 #include "ActorComponent/AGCharacterMovementComponent.h"
+#include "ActorComponent/AGMotionWarpingComponent.h"
 #include "ActorComponent/FootStepComponent.h"
 #include "DataAsset/CharacterDataAsset.h"
 #include "Net/UnrealNetwork.h"
@@ -70,12 +71,14 @@ void AAGActionCharacter::PawnClientRestart()
 
 void AAGActionCharacter::ActivateJumpAbility()
 {
-	FGameplayEventData Payload;
+	// FGameplayEventData Payload;
+	//
+	// Payload.Instigator = this;
+	// Payload.EventTag = JumpEventTag;
+	//
+	// UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, JumpEventTag, Payload);
 
-	Payload.Instigator = this;
-	Payload.EventTag = JumpEventTag;
-
-	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, JumpEventTag, Payload);
+	CharacterMovementComponent->TryTraversal(AbilitySystemComponent);
 }
 
 void AAGActionCharacter::OnActivateCrouchAbility()
@@ -201,6 +204,8 @@ AAGActionCharacter::AAGActionCharacter(const FObjectInitializer& ObjectInitializ
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
+	CharacterMovementComponent = Cast<UAGCharacterMovementComponent>(GetCharacterMovement());
+
 	// Ability System
 	AbilitySystemComponent = CreateDefaultSubobject<UAGAbilitySystemComponentBase>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
@@ -211,6 +216,8 @@ AAGActionCharacter::AAGActionCharacter(const FObjectInitializer& ObjectInitializ
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetMovementSpeedAttribute()).AddUObject(this, &AAGActionCharacter::OnMovementSpeedChanged);
 
 	FootStepComponent = CreateDefaultSubobject<UFootStepComponent>(TEXT("FootStepComponent"));
+
+	MotionWarpingComponent = CreateDefaultSubobject<UAGMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
 }
 
 //////////////////////////////////////////////////////////////
@@ -328,7 +335,7 @@ void AAGActionCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		//Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::ActivateJumpAbility);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AAGActionCharacter::ActivateJumpAbility);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 	
 		//Moving

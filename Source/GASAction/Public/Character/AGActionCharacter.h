@@ -16,6 +16,8 @@ class UAGAttributeSetBase;
 
 class UGameplayEffect;
 class UGameplayAbility;
+class UAGMotionWarpingComponent;
+class UAGCharacterMovementComponent;
 
 UCLASS(config=Game)
 class AAGActionCharacter : public ACharacter, public IAbilitySystemInterface
@@ -133,6 +135,12 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	class UFootStepComponent* FootStepComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MotionWarp")
+	UAGMotionWarpingComponent* MotionWarpingComponent;
+
+	UPROPERTY()
+	UAGCharacterMovementComponent* CharacterMovementComponent;
+
 	// Gameplay Events
 protected:
 	UPROPERTY(EditDefaultsOnly)
@@ -173,7 +181,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE class UFootStepComponent* GetFootStepComponent() const { return FootStepComponent; }
-
+	
+	FORCEINLINE UAGMotionWarpingComponent* GetMotionWarpingComponent() const { return MotionWarpingComponent; }
+	
 	void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
 };
 
