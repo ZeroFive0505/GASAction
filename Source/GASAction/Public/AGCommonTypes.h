@@ -45,26 +45,12 @@ enum class EFoot : uint8
 	Right UMETA(DisplayName = "Right")
 };
 
-USTRUCT(BlueprintType)
-struct FMotionWarpingTargetByLocationAndRotation
+UCLASS(BlueprintType, Blueprintable)
+class UItemStaticData : public UObject
 {
 	GENERATED_BODY()
 
-	FMotionWarpingTargetByLocationAndRotation()
-	{
-	}
-
-	FMotionWarpingTargetByLocationAndRotation(FName InName, FVector InLocation, FQuat InRotation) :
-		Name(InName), Location(InLocation), Rotation(InRotation)
-	{
-	}
-
-	UPROPERTY()
-	FName Name;
-
-	UPROPERTY()
-	FVector Location;
-
-	UPROPERTY()
-	FQuat Rotation;
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FText Name;
 };
