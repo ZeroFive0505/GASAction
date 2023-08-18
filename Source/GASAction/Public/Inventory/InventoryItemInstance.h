@@ -10,7 +10,7 @@ class UItemStaticData;
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable, BlueprintType)
 class GASACTION_API UInventoryItemInstance : public UObject
 {
 	GENERATED_BODY()
@@ -20,6 +20,9 @@ public:
 	virtual bool IsSupportedForNetworking() const override { return true; }
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	const UItemStaticData* GetItemStaticData() const;
 
 	UPROPERTY(Replicated)
 	TSubclassOf<UItemStaticData> ItemStaticDataClass;

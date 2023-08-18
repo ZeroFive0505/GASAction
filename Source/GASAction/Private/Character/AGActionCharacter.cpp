@@ -17,6 +17,7 @@
 #include "ActorComponent/AGCharacterMovementComponent.h"
 #include "ActorComponent/AGMotionWarpingComponent.h"
 #include "ActorComponent/FootStepComponent.h"
+#include "ActorComponent/InventoryComponent.h"
 #include "DataAsset/CharacterDataAsset.h"
 #include "Net/UnrealNetwork.h"
 
@@ -218,6 +219,9 @@ AAGActionCharacter::AAGActionCharacter(const FObjectInitializer& ObjectInitializ
 	FootStepComponent = CreateDefaultSubobject<UFootStepComponent>(TEXT("FootStepComponent"));
 
 	MotionWarpingComponent = CreateDefaultSubobject<UAGMotionWarpingComponent>(TEXT("MotionWarpingComponent"));
+
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+	InventoryComponent->SetIsReplicated(true);
 }
 
 //////////////////////////////////////////////////////////////
@@ -322,6 +326,7 @@ void AAGActionCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AAGActionCharacter, CharacterData);
+	DOREPLIFETIME(AAGActionCharacter, InventoryComponent);
 }
 
 //////////////////////////////////////////////////////////////////////////

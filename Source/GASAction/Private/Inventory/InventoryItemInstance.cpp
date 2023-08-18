@@ -2,6 +2,8 @@
 
 
 #include "Inventory/InventoryItemInstance.h"
+
+#include "BlueprintFuction/ActionGameStatics.h"
 #include "Net/UnrealNetwork.h"
 
 void UInventoryItemInstance::Init(TSubclassOf<UItemStaticData> InItemStaticDataClass)
@@ -15,6 +17,11 @@ void UInventoryItemInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 
 	DOREPLIFETIME(UInventoryItemInstance, ItemStaticDataClass);
 	DOREPLIFETIME(UInventoryItemInstance, bEquipped);
+}
+
+const UItemStaticData* UInventoryItemInstance::GetItemStaticData() const
+{
+	return UActionGameStatics::GetItemStaticData(ItemStaticDataClass);
 }
 
 void UInventoryItemInstance::OnRep_Equipped()

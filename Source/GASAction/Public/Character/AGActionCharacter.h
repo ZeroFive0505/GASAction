@@ -11,6 +11,7 @@
 #include "InputActionValue.h"
 #include "AGActionCharacter.generated.h"
 
+class UInventoryComponent;
 class UAGAbilitySystemComponentBase;
 class UAGAttributeSetBase;
 
@@ -185,5 +186,10 @@ public:
 	FORCEINLINE UAGMotionWarpingComponent* GetMotionWarpingComponent() const { return MotionWarpingComponent; }
 	
 	void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
+
+	// Inventory
+protected:
+	UPROPERTY(EditAnywhere, Replicated)
+	UInventoryComponent* InventoryComponent;
 };
 

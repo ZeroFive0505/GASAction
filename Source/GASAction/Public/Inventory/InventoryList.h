@@ -31,6 +31,8 @@ struct FInventoryList : public FFastArraySerializer
 
 	void AddItem(TSubclassOf<UItemStaticData> InItemStaticData);
 	void RemoveItem(TSubclassOf<UItemStaticData> InItemStaticData);
+
+	TArray<FInventoryListItem>& GetItem() { return Items; }
 	
 protected:
 	UPROPERTY()
