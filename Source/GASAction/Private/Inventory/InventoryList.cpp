@@ -19,7 +19,7 @@ void FInventoryList::RemoveItem(TSubclassOf<UItemStaticData> InItemStaticData)
 	{
 		FInventoryListItem& Item = *ItemIter;
 
-		if(Item.ItemInstance && Item.ItemInstance->IsA(InItemStaticData))
+		if(Item.ItemInstance && Item.ItemInstance->GetItemStaticData()->IsA(InItemStaticData))
 		{
 			ItemIter.RemoveCurrent();
 			MarkArrayDirty();

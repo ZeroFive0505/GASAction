@@ -6,6 +6,7 @@
 #include "UObject/NoExportTypes.h"
 #include "InventoryItemInstance.generated.h"
 
+class AItemActor;
 class UItemStaticData;
 /**
  * 
@@ -33,6 +34,11 @@ public:
 	UFUNCTION()
 	void OnRep_Equipped();
 
-	virtual void OnEquipped() {}
-	virtual void OnUnequipped() {}
+	virtual void OnEquipped(AActor* InOwner = nullptr);
+	virtual void OnUnequipped();
+	virtual void OnDropped();
+
+protected:
+	UPROPERTY(Replicated)
+	AItemActor* ItemActor = nullptr;
 };

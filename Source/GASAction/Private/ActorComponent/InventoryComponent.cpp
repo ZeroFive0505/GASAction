@@ -40,6 +40,11 @@ void UInventoryComponent::InitializeComponent()
 		{
 			InventoryList.AddItem(ItemClass);
 		}
+
+		if(InventoryList.GetItem().Num())
+		{
+			EquipItem(InventoryList.GetItem()[0].ItemInstance->ItemStaticDataClass);
+		}
 	}
 }
 
@@ -53,7 +58,7 @@ bool UInventoryComponent::ReplicateSubobjects(UActorChannel* Channel, FOutBunch*
 
 		if(IsValid(ItemInstance))
 		{
-			WroteSomething = Channel->ReplicateSubobject(ItemInstance, *Bunch, *RepFlags); 
+			WroteSomething |= Channel->ReplicateSubobject(ItemInstance, *Bunch, *RepFlags); 
 		}
 	}
 
@@ -65,8 +70,61 @@ void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UInventoryComponent, InventoryList);
+	DOREPLIFETIME(UInventoryComponent, CurrentItem);
 }
 
+void UInventoryComponent::AddItem(TSubclassOf<UItemStaticData> InItemStaticClass)
+{
+	InventoryList.AddItem(InItemStaticClass);
+}
+
+void UInventoryComponent::RemoveItem(TSubclassOf<UItemStaticData> InItemStaticClass)
+{
+	InventoryList.RemoveItem(InItemStaticClass);
+}
+
+void UInventoryComponent::EquipItem(TSubclassOf<UItemStaticData> InItemStaticClass)
+{
+	if(GetOwner()->HasAuthority())
+	{
+		for(auto Item : InventoryList.GetItem())
+		{
+			if(Item.ItemInstance->ItemStaticDataClass == InItemStaticClass)
+			{
+				Item.ItemInstance->OnEquipped(GetOwner());
+
+				CurrentItem = Item.ItemInstance;
+				
+				break;
+			}
+		}
+	}
+}
+
+void UInventoryComponent::UnEquipItem()
+{
+	if(GetOwner()->HasAuthority())
+	{
+		if(IsValid(CurrentItem))
+		{
+			CurrentItem->OnUnequipped();
+			CurrentItem = nullptr;
+		}
+	}
+}
+
+void UInventoryComponent::DropItem()
+{
+	if(GetOwner()->HasAuthority())
+	{
+		if(IsValid(CurrentItem))
+		{
+			CurrentItem->OnDropped();
+			RemoveItem(CurrentItem->ItemStaticDataClass);
+			CurrentItem = nullptr;
+		}
+	}
+}
 
 // Called when the game starts
 void UInventoryComponent::BeginPlay()

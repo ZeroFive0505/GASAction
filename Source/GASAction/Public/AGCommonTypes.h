@@ -45,6 +45,14 @@ enum class EFoot : uint8
 	Right UMETA(DisplayName = "Right")
 };
 
+UENUM(BlueprintType)
+enum class EItemState : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Equipped UMETA(DisplayName = "Equipped"),
+	Dropped UMETA(DisplayName = "Dropped")
+};
+
 UCLASS(BlueprintType, Blueprintable)
 class UItemStaticData : public UObject
 {
@@ -53,4 +61,10 @@ class UItemStaticData : public UObject
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FText Name;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<class AItemActor> ItemActorClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FName AttachmentSocket = NAME_None;
 };
