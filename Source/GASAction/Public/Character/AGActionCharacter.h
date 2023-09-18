@@ -55,6 +55,15 @@ class AAGActionCharacter : public ACharacter, public IAbilitySystemInterface
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* SprintAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* DropItemAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputAction* EquipNextItemAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputAction* UnEquipItemAction;
+
 public:
 	AAGActionCharacter();
 	
@@ -96,6 +105,12 @@ protected:
 	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
 
 	virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+
+	virtual void OnDropItem(const FInputActionValue& Value);
+
+	virtual void OnEquipItemNext(const FInputActionValue& Value);
+
+	virtual void OnUnEquipItem(const FInputActionValue& Value);
 
 	AAGActionCharacter(const FObjectInitializer& ObjectInitializer);
 

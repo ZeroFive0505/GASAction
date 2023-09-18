@@ -36,10 +36,13 @@ protected:
 	UPROPERTY(Replicated)
 	UInventoryItemInstance* ItemInstance;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_ItemState)
 	TEnumAsByte<EItemState> ItemState;
 
-	UPROPERTY()
+	UFUNCTION()
+	void OnRep_ItemState();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	USphereComponent* SphereComponent;
 	
 	UFUNCTION()
@@ -47,6 +50,9 @@ protected:
 
 	UPROPERTY()
 	FGameplayTag OverlapEventTag;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UItemStaticData> ItemStaticDataClass;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

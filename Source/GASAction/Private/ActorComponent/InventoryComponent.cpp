@@ -3,7 +3,11 @@
 
 #include "ActorComponent/InventoryComponent.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystemComponent.h"
 #include "AGCommonTypes.h"
+#include "GameplayTagsManager.h"
+#include "GameplayTasksComponent.h"
 #include "Engine/ActorChannel.h"
 #include "Net/UnrealNetwork.h"
 #include "Inventory/InventoryList.h"
@@ -17,6 +21,10 @@ TEXT("ShowDebugInventory"),
 	TEXT("  1: on/n"),
 	ECVF_Cheat);
 
+FGameplayTag UInventoryComponent::EquipItemActorTag;
+FGameplayTag UInventoryComponent::DropItemTag;
+FGameplayTag UInventoryComponent::EquipNextTag;
+FGameplayTag UInventoryComponent::UnEquipTag;
 
 // Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
@@ -26,8 +34,14 @@ UInventoryComponent::UInventoryComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 	bWantsInitializeComponent = true;
 	SetIsReplicatedByDefault(true);
-	
-	// ...
+
+	static bool bHandleAddingTags = false;
+
+	if(!bHandleAddingTags)
+	{
+		bHandleAddingTags = true;
+		UGameplayTagsManager::Get().OnLastChanceToAddNativeTags().AddUObject(this, &UInventoryComponent::AddInventoryTags);
+	}
 }
 
 void UInventoryComponent::InitializeComponent()
@@ -40,11 +54,14 @@ void UInventoryComponent::InitializeComponent()
 		{
 			InventoryList.AddItem(ItemClass);
 		}
+	}
 
-		if(InventoryList.GetItem().Num())
-		{
-			EquipItem(InventoryList.GetItem()[0].ItemInstance->ItemStaticDataClass);
-		}
+	if(UAbilitySystemComponent* AbilitySystemComponent = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(GetOwner()))
+	{
+		AbilitySystemComponent->GenericGameplayEventCallbacks.FindOrAdd(UInventoryComponent::EquipItemActorTag).AddUObject(this, &UInventoryComponent::GameplayEventCallback);
+		AbilitySystemComponent->GenericGameplayEventCallbacks.FindOrAdd(UInventoryComponent::DropItemTag).AddUObject(this, &UInventoryComponent::GameplayEventCallback);
+		AbilitySystemComponent->GenericGameplayEventCallbacks.FindOrAdd(UInventoryComponent::EquipNextTag).AddUObject(this, &UInventoryComponent::GameplayEventCallback);
+		AbilitySystemComponent->GenericGameplayEventCallbacks.FindOrAdd(UInventoryComponent::UnEquipTag).AddUObject(this, &UInventoryComponent::GameplayEventCallback);
 	}
 }
 
@@ -52,7 +69,7 @@ bool UInventoryComponent::ReplicateSubobjects(UActorChannel* Channel, FOutBunch*
 {
 	bool WroteSomething = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
 
-	for(FInventoryListItem& Item : InventoryList.GetItem())
+	for(FInventoryListItem& Item : InventoryList.GetItemRef())
 	{
 		UInventoryItemInstance* ItemInstance = Item.ItemInstance;
 
@@ -75,19 +92,33 @@ void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 
 void UInventoryComponent::AddItem(TSubclassOf<UItemStaticData> InItemStaticClass)
 {
-	InventoryList.AddItem(InItemStaticClass);
+	if(GetOwner()->HasAuthority())
+	{
+		InventoryList.AddItem(InItemStaticClass);
+	}
+}
+
+void UInventoryComponent::AddItemInstance(UInventoryItemInstance* InventoryItemInstance)
+{
+	if(GetOwner()->HasAuthority())
+	{
+		InventoryList.AddItem(InventoryItemInstance);
+	}
 }
 
 void UInventoryComponent::RemoveItem(TSubclassOf<UItemStaticData> InItemStaticClass)
 {
-	InventoryList.RemoveItem(InItemStaticClass);
+	if(GetOwner()->HasAuthority())
+	{
+		InventoryList.RemoveItem(InItemStaticClass);
+	}
 }
 
 void UInventoryComponent::EquipItem(TSubclassOf<UItemStaticData> InItemStaticClass)
 {
 	if(GetOwner()->HasAuthority())
 	{
-		for(auto Item : InventoryList.GetItem())
+		for(auto Item : InventoryList.GetItemRef())
 		{
 			if(Item.ItemInstance->ItemStaticDataClass == InItemStaticClass)
 			{
@@ -96,6 +127,21 @@ void UInventoryComponent::EquipItem(TSubclassOf<UItemStaticData> InItemStaticCla
 				CurrentItem = Item.ItemInstance;
 				
 				break;
+			}
+		}
+	}
+}
+
+void UInventoryComponent::EquipItemInstance(UInventoryItemInstance* InventoryItemInstance)
+{
+	if(GetOwner()->HasAuthority())
+	{
+		for(auto& Item : InventoryList.GetItemRef())
+		{
+			if(Item.ItemInstance == InventoryItemInstance)
+			{
+				Item.ItemInstance->OnEquipped(GetOwner());
+				CurrentItem = Item.ItemInstance;
 			}
 		}
 	}
@@ -126,6 +172,59 @@ void UInventoryComponent::DropItem()
 	}
 }
 
+void UInventoryComponent::EquipNext()
+{
+	TArray<FInventoryListItem>& Items = InventoryList.GetItemRef();
+
+	const bool bNoItems = Items.Num() == 0;
+	const bool bOneAndEquipped = Items.Num() ==  1 && CurrentItem;
+
+	if(bNoItems || bOneAndEquipped)
+	{
+		return;
+	}
+
+	UInventoryItemInstance* TargetItem = CurrentItem;
+
+	for(auto& Item : Items)
+	{
+		if(Item.ItemInstance->GetItemStaticData())
+		{
+			if(Item.ItemInstance != CurrentItem)
+			{
+				TargetItem = Item.ItemInstance;
+				break;
+			}
+		}
+	}
+
+	if(CurrentItem)
+	{
+		if(TargetItem == CurrentItem)
+		{
+			return;
+		}
+
+		UnEquipItem();
+
+		EquipItemInstance(TargetItem);
+	}
+}
+
+void UInventoryComponent::GameplayEventCallback(const FGameplayEventData* Payload)
+{
+	ENetRole NetRole = GetOwnerRole();
+
+	if(NetRole == ROLE_Authority)
+	{
+		HandleGameplayEventInternal(*Payload);
+	}
+	else if(NetRole == ROLE_AutonomousProxy)
+	{
+		ServerHandleGameplayEvent(*Payload);
+	}
+}
+
 // Called when the game starts
 void UInventoryComponent::BeginPlay()
 {
@@ -135,6 +234,57 @@ void UInventoryComponent::BeginPlay()
 	
 }
 
+void UInventoryComponent::AddInventoryTags()
+{
+	UGameplayTagsManager& TagsManager = UGameplayTagsManager::Get();
+
+	UInventoryComponent::EquipItemActorTag = TagsManager.AddNativeGameplayTag(TEXT("Event.Inventory.EquipItemActor"), TEXT("Equip item from item actor event"));
+	UInventoryComponent::DropItemTag = TagsManager.AddNativeGameplayTag(TEXT("Event.Inventory.DropItem"), TEXT("Drop equipped item"));
+	UInventoryComponent::EquipNextTag = TagsManager.AddNativeGameplayTag(TEXT("Event.Inventory.EquipNext"), TEXT("Try to equip next item"));
+	UInventoryComponent::UnEquipTag = TagsManager.AddNativeGameplayTag(TEXT("Event.Inventory.UnEquip"), TEXT("Unequip current item"));
+
+	TagsManager.OnLastChanceToAddNativeTags().RemoveAll(this);
+}
+
+void UInventoryComponent::HandleGameplayEventInternal(FGameplayEventData Payload)
+{
+	ENetRole NetRole = GetOwnerRole();
+	
+	if(NetRole == ROLE_Authority)
+	{
+		FGameplayTag EventTag = Payload.EventTag;
+
+		if(EventTag == UInventoryComponent::EquipItemActorTag)
+		{
+			if(const UInventoryItemInstance* ItemInstance = Cast<UInventoryItemInstance>(Payload.OptionalObject))
+			{
+				AddItemInstance(const_cast<UInventoryItemInstance*>(ItemInstance));
+
+				if(Payload.Instigator)
+				{
+					const_cast<AActor*>(ToRawPtr(Payload.Instigator))->Destroy();
+				}
+			}
+		}
+		else if(EventTag == UInventoryComponent::EquipNextTag)
+		{
+			EquipNext();
+		}
+		else if(EventTag == UInventoryComponent::DropItemTag)
+		{
+			DropItem();
+		}
+		else if(EventTag == UInventoryComponent::UnEquipTag)
+		{
+			UnEquipItem();
+		}
+	}
+}
+
+void UInventoryComponent::ServerHandleGameplayEvent_Implementation(FGameplayEventData Payload)
+{
+	HandleGameplayEventInternal(Payload);
+}
 
 // Called every frame
 void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -147,7 +297,7 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 	if(bShowDebug)
 	{
-		for(FInventoryListItem& Item : InventoryList.GetItem())
+		for(FInventoryListItem& Item : InventoryList.GetItemRef())
 		{
 			UInventoryItemInstance* ItemInstance = Item.ItemInstance;
 			const UItemStaticData* ItemStaticData = ItemInstance->GetItemStaticData();

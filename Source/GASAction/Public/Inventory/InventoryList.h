@@ -30,9 +30,10 @@ struct FInventoryList : public FFastArraySerializer
 	}
 
 	void AddItem(TSubclassOf<UItemStaticData> InItemStaticData);
+	void AddItem(UInventoryItemInstance* InventoryItemInstance);
 	void RemoveItem(TSubclassOf<UItemStaticData> InItemStaticData);
 
-	TArray<FInventoryListItem>& GetItem() { return Items; }
+	TArray<FInventoryListItem>& GetItemRef() { return Items; }
 	
 protected:
 	UPROPERTY()

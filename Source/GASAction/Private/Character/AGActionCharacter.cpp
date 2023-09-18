@@ -166,6 +166,30 @@ void AAGActionCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHei
 	}
 }
 
+void AAGActionCharacter::OnDropItem(const FInputActionValue& Value)
+{
+	FGameplayEventData EventData;
+	EventData.EventTag = UInventoryComponent::DropItemTag;
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, UInventoryComponent::DropItemTag, EventData);
+}
+
+void AAGActionCharacter::OnEquipItemNext(const FInputActionValue& Value)
+{
+	FGameplayEventData EventData;
+	EventData.EventTag = UInventoryComponent::EquipItemActorTag;
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, UInventoryComponent::EquipNextTag, EventData);
+}
+
+void AAGActionCharacter::OnUnEquipItem(const FInputActionValue& Value)
+{
+	FGameplayEventData EventData;
+	EventData.EventTag = UInventoryComponent::UnEquipTag;
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, UInventoryComponent::UnEquipTag, EventData);
+}
+
 AAGActionCharacter::AAGActionCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UAGCharacterMovementComponent>(
 		ACharacter::CharacterMovementComponentName))
@@ -356,6 +380,15 @@ void AAGActionCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 		// Sprint
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AAGActionCharacter::OnActivateSprintAbility);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AAGActionCharacter::OnDeactivateSprintAbility);
+
+		// Equip next
+		EnhancedInputComponent->BindAction(EquipNextItemAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnEquipItemNext);
+
+		// Drop
+		EnhancedInputComponent->BindAction(DropItemAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnDropItem);
+
+		// UnEquip
+		EnhancedInputComponent->BindAction(UnEquipItemAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnUnEquipItem);
 	}
 }
 
