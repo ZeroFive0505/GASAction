@@ -69,5 +69,5 @@ public:
 	FName AttachmentSocket = NAME_None;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	bool bCanBrEquipped = false;
+	bool bCanBeEquipped = false;
 };

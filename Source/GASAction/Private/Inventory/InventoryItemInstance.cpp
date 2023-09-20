@@ -42,6 +42,7 @@ void UInventoryItemInstance::OnEquipped(AActor* InOwner)
 		FTransform Transform;
 		ItemActor = World->SpawnActorDeferred<AItemActor>(GetItemStaticData()->ItemActorClass, Transform);
 		ItemActor->InitItemActor(this);
+		ItemActor->SetOwner(InOwner);
 		ItemActor->OnEquipped();
 		ItemActor->FinishSpawning(Transform);
 

@@ -123,9 +123,7 @@ void UInventoryComponent::EquipItem(TSubclassOf<UItemStaticData> InItemStaticCla
 			if(Item.ItemInstance->ItemStaticDataClass == InItemStaticClass)
 			{
 				Item.ItemInstance->OnEquipped(GetOwner());
-
 				CurrentItem = Item.ItemInstance;
-				
 				break;
 			}
 		}
@@ -142,6 +140,7 @@ void UInventoryComponent::EquipItemInstance(UInventoryItemInstance* InventoryIte
 			{
 				Item.ItemInstance->OnEquipped(GetOwner());
 				CurrentItem = Item.ItemInstance;
+				break;
 			}
 		}
 	}
@@ -188,7 +187,7 @@ void UInventoryComponent::EquipNext()
 
 	for(auto& Item : Items)
 	{
-		if(Item.ItemInstance->GetItemStaticData())
+		if(Item.ItemInstance->GetItemStaticData()->bCanBeEquipped)
 		{
 			if(Item.ItemInstance != CurrentItem)
 			{
@@ -206,9 +205,9 @@ void UInventoryComponent::EquipNext()
 		}
 
 		UnEquipItem();
-
-		EquipItemInstance(TargetItem);
 	}
+
+	EquipItemInstance(TargetItem);
 }
 
 void UInventoryComponent::GameplayEventCallback(const FGameplayEventData* Payload)

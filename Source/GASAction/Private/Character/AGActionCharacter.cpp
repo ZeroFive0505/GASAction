@@ -174,10 +174,10 @@ void AAGActionCharacter::OnDropItem(const FInputActionValue& Value)
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, UInventoryComponent::DropItemTag, EventData);
 }
 
-void AAGActionCharacter::OnEquipItemNext(const FInputActionValue& Value)
+void AAGActionCharacter::OnEquipNextItem(const FInputActionValue& Value)
 {
 	FGameplayEventData EventData;
-	EventData.EventTag = UInventoryComponent::EquipItemActorTag;
+	EventData.EventTag = UInventoryComponent::EquipNextTag;
 
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, UInventoryComponent::EquipNextTag, EventData);
 }
@@ -382,7 +382,7 @@ void AAGActionCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AAGActionCharacter::OnDeactivateSprintAbility);
 
 		// Equip next
-		EnhancedInputComponent->BindAction(EquipNextItemAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnEquipItemNext);
+		EnhancedInputComponent->BindAction(EquipNextItemAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnEquipNextItem);
 
 		// Drop
 		EnhancedInputComponent->BindAction(DropItemAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnDropItem);

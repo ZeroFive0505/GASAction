@@ -46,7 +46,9 @@ void AItemActor::OnDropped()
 
 	GetRootComponent()->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 
-	if (AActor* ActorOwner = GetOwner())
+	AActor* ActorOwner = GetOwner();
+	
+	if (ActorOwner)
 	{
 		FVector Location = GetActorLocation();
 		FVector Forward = ActorOwner->GetActorForwardVector();
@@ -78,9 +80,11 @@ void AItemActor::OnDropped()
 		}
 
 		SetActorLocation(TargetLocation);
+		SetActorRotation(FQuat::Identity);
 
 		SphereComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		SphereComponent->SetGenerateOverlapEvents(true);
+		SetOwner(nullptr);
 	}
 }
 
@@ -148,7 +152,6 @@ void AItemActor::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 		EventPayload.Instigator = this;
 		EventPayload.OptionalObject = ItemInstance;
 		EventPayload.EventTag = UInventoryComponent::EquipItemActorTag;
-
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OtherActor, UInventoryComponent::EquipItemActorTag,
 		                                                         EventPayload);
 	}

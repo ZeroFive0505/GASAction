@@ -108,7 +108,7 @@ protected:
 
 	virtual void OnDropItem(const FInputActionValue& Value);
 
-	virtual void OnEquipItemNext(const FInputActionValue& Value);
+	virtual void OnEquipNextItem(const FInputActionValue& Value);
 
 	virtual void OnUnEquipItem(const FInputActionValue& Value);
 
