@@ -53,6 +53,16 @@ enum class EItemState : uint8
 	Dropped UMETA(DisplayName = "Dropped")
 };
 
+
+UENUM()
+enum class EMovementDirectionType : uint8
+{
+	None UMETA(DisplayName = "None"),
+	OrientToMovement UMETA(DisplayName = "OrientToMovment"),
+	Strafe UMETA(DisplayName = "Strafe")
+};
+
+
 UCLASS(BlueprintType, Blueprintable)
 class UItemStaticData : public UObject
 {
@@ -70,4 +80,35 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	bool bCanBeEquipped = false;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FCharacterAnimationData CharacterAnimationData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TArray<TSubclassOf<UGameplayAbility>> GrantedAbilities;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TArray<TSubclassOf<UGameplayEffect>> OnGoingEffects;
+};
+
+UCLASS(BlueprintType, Blueprintable)
+class UWeaponStaticData : public UItemStaticData
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<UGameplayEffect> DamageEffect;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	USkeletalMesh* SkeletalMesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UStaticMesh* StaticMesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UAnimMontage* AnimMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float FireRate;
 };

@@ -64,6 +64,10 @@ class AAGActionCharacter : public ACharacter, public IAbilitySystemInterface
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* UnEquipItemAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputAction* AttackInputAction;
+
+
 public:
 	AAGActionCharacter();
 	
@@ -111,6 +115,10 @@ protected:
 	virtual void OnEquipNextItem(const FInputActionValue& Value);
 
 	virtual void OnUnEquipItem(const FInputActionValue& Value);
+	
+	virtual void OnAttackStarted(const FInputActionValue& Value);
+
+	virtual void OnAttackEnded(const FInputActionValue& Value);
 
 	AAGActionCharacter(const FObjectInitializer& ObjectInitializer);
 
@@ -162,6 +170,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	FGameplayTag JumpEventTag;
 
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTag AttackStartTag;
+
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTag AttackEndTag;
+
 	// Gameplay Tags
 protected:
 	UPROPERTY(EditDefaultsOnly)
@@ -201,6 +215,8 @@ public:
 	FORCEINLINE UAGMotionWarpingComponent* GetMotionWarpingComponent() const { return MotionWarpingComponent; }
 	
 	void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
+
+	FORCEINLINE UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
 
 	// Inventory
 protected:

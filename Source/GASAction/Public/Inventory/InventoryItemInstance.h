@@ -4,8 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "Abilities/GameplayAbility.h"
 #include "InventoryItemInstance.generated.h"
 
+struct FGameplayAbilitySpecHandle;
 class AItemActor;
 class UItemStaticData;
 /**
@@ -35,10 +37,27 @@ public:
 	void OnRep_Equipped();
 
 	virtual void OnEquipped(AActor* InOwner = nullptr);
-	virtual void OnUnequipped();
-	virtual void OnDropped();
+	virtual void OnUnequipped(AActor* InOwner = nullptr);
+	virtual void OnDropped(AActor* InOwner = nullptr);
+
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE AItemActor* GetItemActor() const { return ItemActor; }
 
 protected:
 	UPROPERTY(Replicated)
 	AItemActor* ItemActor = nullptr;
+
+	void TryGrantAbilities(AActor* InOwner);
+
+	void TryRemoveAbilities(AActor* InOwner);
+
+	void TryApplyEffects(AActor* InOwner);
+
+	void TryRemoveEffects(AActor* InOwner);
+
+	UPROPERTY()
+	TArray<FGameplayAbilitySpecHandle> GrantedAbilityHandles;
+
+	UPROPERTY()
+	TArray<FActiveGameplayEffectHandle> OnGoingEffectsHandles;
 };

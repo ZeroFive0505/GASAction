@@ -108,6 +108,8 @@ void AItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 void AItemActor::InitItemActor(UInventoryItemInstance* InItemInstance)
 {
 	ItemInstance = InItemInstance;
+
+	InitInternal();
 }
 
 void AItemActor::OnRep_ItemState()
@@ -138,7 +140,17 @@ void AItemActor::BeginPlay()
 
 			SphereComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 			SphereComponent->SetGenerateOverlapEvents(true);
+
+			InitInternal();
 		}
+	}
+}
+
+void AItemActor::OnRep_ItemInstance(UInventoryItemInstance* OldItemInstance)
+{
+	if(IsValid(ItemInstance) && !IsValid(OldItemInstance))
+	{
+		InitInternal();
 	}
 }
 
@@ -155,6 +167,11 @@ void AItemActor::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OtherActor, UInventoryComponent::EquipItemActorTag,
 		                                                         EventPayload);
 	}
+}
+
+void AItemActor::InitInternal()
+{
+	
 }
 
 // Called every frame

@@ -65,7 +65,6 @@ void UAGGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 					}
 				}
 			}
-			
 		}
 	}
 }

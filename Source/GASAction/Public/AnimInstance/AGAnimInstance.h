@@ -6,13 +6,16 @@
 #include "Animation/AnimInstance.h"
 #include "AGAnimInstance.generated.h"
 
-/**
- * 
- */
+
+class UItemStaticData;
+
 UCLASS()
 class GASACTION_API UAGAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
+
+public:
+	const UItemStaticData* GetEquippedItemData() const; 
 
 protected:
 	UFUNCTION(BlueprintCallable, meta = (BlueprintThreadSafe))

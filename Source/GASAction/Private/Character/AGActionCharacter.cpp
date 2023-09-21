@@ -190,6 +190,22 @@ void AAGActionCharacter::OnUnEquipItem(const FInputActionValue& Value)
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, UInventoryComponent::UnEquipTag, EventData);
 }
 
+void AAGActionCharacter::OnAttackStarted(const FInputActionValue& Value)
+{
+	FGameplayEventData EventData;
+	EventData.EventTag = AttackStartTag;
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, AttackStartTag, EventData);
+}
+
+void AAGActionCharacter::OnAttackEnded(const FInputActionValue& Value)
+{
+	FGameplayEventData EventData;
+	EventData.EventTag = AttackEndTag;
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, AttackEndTag, EventData);
+}
+
 AAGActionCharacter::AAGActionCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UAGCharacterMovementComponent>(
 		ACharacter::CharacterMovementComponentName))
@@ -389,6 +405,10 @@ void AAGActionCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 
 		// UnEquip
 		EnhancedInputComponent->BindAction(UnEquipItemAction, ETriggerEvent::Triggered, this, &AAGActionCharacter::OnUnEquipItem);
+
+		// Attack
+		EnhancedInputComponent->BindAction(AttackInputAction, ETriggerEvent::Started, this, &AAGActionCharacter::OnAttackStarted);
+		EnhancedInputComponent->BindAction(AttackInputAction, ETriggerEvent::Completed, this, &AAGActionCharacter::OnAttackEnded);
 	}
 }
 
