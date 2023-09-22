@@ -121,30 +121,12 @@ void UInventoryItemInstance::TryRemoveAbilities(AActor* InOwner)
 		{
 			const UItemStaticData* ItemStaticData = GetItemStaticData();
 
-			FGameplayEffectContextHandle EffectContextHandle = AbilitySystemComponent->MakeEffectContext();
-
-			for(auto GameplayEffect : ItemStaticData->OnGoingEffects)
+			for(auto& AbilityHandle : GrantedAbilityHandles)
 			{
-				if(!GameplayEffect.Get())
-				{
-					continue;
-				}
-
-				FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(GameplayEffect, 1, EffectContextHandle);
-
-				if(SpecHandle.IsValid())
-				{
-					FActiveGameplayEffectHandle ActiveGameplayEffectHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-					if(!ActiveGameplayEffectHandle.WasSuccessfullyApplied())
-					{
-						ABILITY_LOG(Log, TEXT("Item %s failed to apply runtime effect %s"), *GetName(), *GetNameSafe(GameplayEffect));
-					}
-					else
-					{
-						OnGoingEffectsHandles.Add(ActiveGameplayEffectHandle);
-					}
-				}
+				AbilitySystemComponent->ClearAbility(AbilityHandle);
 			}
+
+			GrantedAbilityHandles.Empty();
 		}
 	}
 }

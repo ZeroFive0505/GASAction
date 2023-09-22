@@ -41,5 +41,5 @@ public:
 
 protected:
 	UPROPERTY()
-	UInventoryComponent* InventoryComponent;
+	TObjectPtr<UInventoryComponent> InventoryComponent = nullptr;
 };
