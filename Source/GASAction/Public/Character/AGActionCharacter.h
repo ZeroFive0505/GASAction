@@ -88,7 +88,7 @@ protected:
 	// To add mapping context
 	virtual void BeginPlay();
 
-	virtual void PostInitializeComponents() override;
+	virtual void PostLoad() override;
 
 	virtual void PawnClientRestart() override;
 

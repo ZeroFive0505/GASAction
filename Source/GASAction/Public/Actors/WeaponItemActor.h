@@ -21,7 +21,15 @@ class GASACTION_API AWeaponItemActor : public AItemActor
 	UFUNCTION(BlueprintPure)
 	FORCEINLINE FVector GetMuzzlePosition() const { return MeshComponent ? MeshComponent->GetSocketLocation(TEXT("Muzzle")) : GetActorLocation(); }
 
+	UFUNCTION(BlueprintCallable)
+	void PlayWeaponEffects(const FHitResult& InHitResult);
+
 protected:
+	UFUNCTION(NetMulticast, Reliable)
+	void MultiCastPlayWeaponEffects(const FHitResult& InHitResult);
+
+	void PlayWeaponEffectsInternal(const FHitResult& InHitResult);
+	
 	UPROPERTY()
 	UMeshComponent* MeshComponent = nullptr;
 

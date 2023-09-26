@@ -15,7 +15,7 @@ void UAGAttributeSetBase::PostGameplayEffectExecute(const FGameplayEffectModCall
 
 	if(Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
-		SetHealth(FMath::Clamp(GetMaxHealth(), 0.0f, GetMaxHealth()));
+		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
 	}
 	else if(Data.EvaluatedData.Attribute == GetMovementSpeedAttribute())
 	{

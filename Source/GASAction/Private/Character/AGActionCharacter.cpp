@@ -45,9 +45,9 @@ void AAGActionCharacter::BeginPlay()
 	}
 }
 
-void AAGActionCharacter::PostInitializeComponents()
+void AAGActionCharacter::PostLoad()
 {
-	Super::PostInitializeComponents();
+	Super::PostLoad();
 
 	if (IsValid(CharacterDataAsset))
 	{
