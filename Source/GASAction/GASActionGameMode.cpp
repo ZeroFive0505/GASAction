@@ -1,6 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "GASActionGameMode.h"
+
+#include "Controller/ActionGamerController.h"
 #include "UObject/ConstructorHelpers.h"
 
 AGASActionGameMode::AGASActionGameMode()
@@ -11,4 +13,15 @@ AGASActionGameMode::AGASActionGameMode()
 	// {
 	// 	DefaultPawnClass = PlayerPawnBPClass.Class;
 	// }
+
+
+	PlayerControllerClass = AActionGamerController::StaticClass();
+}
+
+void AGASActionGameMode::NotifyPlayerDied(AActionGamerController* PlayerController)
+{
+	if(PlayerController)
+	{
+		PlayerController->RestartPlayerIn(2.0f);
+	}
 }

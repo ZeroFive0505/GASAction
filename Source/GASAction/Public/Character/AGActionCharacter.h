@@ -19,6 +19,10 @@ class UGameplayEffect;
 class UGameplayAbility;
 class UAGMotionWarpingComponent;
 class UAGCharacterMovementComponent;
+class UInputAction;
+class USpringArmComponent;
+class UCameraComponent;
+class UInputMappingContext;
 
 UCLASS(config=Game)
 class AAGActionCharacter : public ACharacter, public IAbilitySystemInterface
@@ -27,45 +31,48 @@ class AAGActionCharacter : public ACharacter, public IAbilitySystemInterface
 
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class USpringArmComponent* CameraBoom;
+	USpringArmComponent* CameraBoom;
 
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* FollowCamera;
+	UCameraComponent* FollowCamera;
 	
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputMappingContext* DefaultMappingContext;
+	UInputMappingContext* DefaultMappingContext;
 
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* JumpAction;
+	UInputAction* JumpAction;
 
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* MoveAction;
+	UInputAction* MoveAction;
 
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* LookAction;
+	UInputAction* LookAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* CrouchAction;
+	UInputAction* CrouchAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* SprintAction;
+	UInputAction* SprintAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* DropItemAction;
+	UInputAction* DropItemAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* EquipNextItemAction;
+	UInputAction* EquipNextItemAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* UnEquipItemAction;
+	UInputAction* UnEquipItemAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* AttackInputAction;
+	UInputAction* AttackInputAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* AimInputAction;
 
 
 public:
@@ -120,14 +127,18 @@ protected:
 
 	virtual void OnAttackEnded(const FInputActionValue& Value);
 
+	virtual void OnAimActionStarted(const FInputActionValue& Value);
+
+	virtual void OInAimActionEnded(const FInputActionValue& Value);
+
 	AAGActionCharacter(const FObjectInitializer& ObjectInitializer);
 
 
 public:
 	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 	////////////////////////////////////////////////////////////
 	// Gameplay ability
@@ -165,6 +176,9 @@ protected:
 	UPROPERTY()
 	UAGCharacterMovementComponent* CharacterMovementComponent;
 
+	UFUNCTION()
+	void OnRagDollStateChanged(const FGameplayTag CallbackTag, int32 NewCount);
+
 	// Gameplay Events
 protected:
 	UPROPERTY(EditDefaultsOnly)
@@ -175,6 +189,18 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	FGameplayTag AttackEndTag;
+
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTag AimStartedEventTag;
+
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTag AimEndedEventTag;
+	
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTag ZeroHealthEventTag;;
+
+	UPROPERTY(EditDefaultsOnly)
+	FGameplayTag RagDollEventTag;
 
 	// Gameplay Tags
 protected:
@@ -215,8 +241,12 @@ public:
 	FORCEINLINE UAGMotionWarpingComponent* GetMotionWarpingComponent() const { return MotionWarpingComponent; }
 	
 	void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
+	
+	void OnHealthAttributeChanged(const FOnAttributeChangeData& Data);
 
 	FORCEINLINE UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
+
+	void StartRagDoll();
 
 	// Inventory
 protected:

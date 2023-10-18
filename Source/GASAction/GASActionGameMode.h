@@ -6,6 +6,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "GASActionGameMode.generated.h"
 
+class AActionGamerController;
+
 UCLASS(minimalapi)
 class AGASActionGameMode : public AGameModeBase
 {
@@ -13,6 +15,8 @@ class AGASActionGameMode : public AGameModeBase
 
 public:
 	AGASActionGameMode();
+
+	void NotifyPlayerDied(AActionGamerController* PlayerController);
 };
 
 

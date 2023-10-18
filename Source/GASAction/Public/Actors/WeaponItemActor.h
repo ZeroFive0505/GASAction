@@ -18,6 +18,7 @@ class GASACTION_API AWeaponItemActor : public AItemActor
 
 	const UWeaponStaticData* GetWeaponStaticData() const;
 
+public:
 	UFUNCTION(BlueprintPure)
 	FORCEINLINE FVector GetMuzzlePosition() const { return MeshComponent ? MeshComponent->GetSocketLocation(TEXT("Muzzle")) : GetActorLocation(); }
 

@@ -8,6 +8,7 @@
 #include "AGCommonTypes.h"
 #include "GameplayTagsManager.h"
 #include "GameplayTasksComponent.h"
+#include "IDetailTreeNode.h"
 #include "Engine/ActorChannel.h"
 #include "Net/UnrealNetwork.h"
 #include "Inventory/InventoryList.h"
@@ -88,6 +89,7 @@ void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 
 	DOREPLIFETIME(UInventoryComponent, InventoryList);
 	DOREPLIFETIME(UInventoryComponent, CurrentItem);
+	DOREPLIFETIME(UInventoryComponent, InventoryTags);
 }
 
 void UInventoryComponent::AddItem(TSubclassOf<UItemStaticData> InItemStaticClass)
@@ -102,7 +104,118 @@ void UInventoryComponent::AddItemInstance(UInventoryItemInstance* InventoryItemI
 {
 	if(GetOwner()->HasAuthority())
 	{
+		TArray<UInventoryItemInstance*> Items = InventoryList.GetAllAvailableInstancesOfType(InventoryItemInstance->ItemStaticDataClass);
+
+		Algo::Sort(Items, [](const UInventoryItemInstance* InA, const UInventoryItemInstance* InB)
+		{
+			return InA->GetQuantity() < InB->GetQuantity();
+		});
+
+		const int32 MaxItemStackCount = InventoryItemInstance->GetItemStaticData()->MaxStackCount;
+
+		int32 ItemsLeft = InventoryItemInstance->GetQuantity();
+
+		for(auto& Item : Items)
+		{
+			const int32 EmptySlots = MaxItemStackCount - Item->GetQuantity();
+
+			int32 SlotsToAdd = ItemsLeft;
+
+			if(ItemsLeft > EmptySlots)
+			{
+				SlotsToAdd = EmptySlots;
+			}
+
+			ItemsLeft -= SlotsToAdd;
+			
+			Item->AddItem(SlotsToAdd);
+			InventoryItemInstance->AddItem(SlotsToAdd);
+
+			for(FGameplayTag InventoryTag : Item->GetItemStaticData()->InventoryTags)
+			{
+				InventoryTags.AddTagCount(InventoryTag, SlotsToAdd);
+			}
+
+			if(ItemsLeft <= 0)
+			{
+				ItemsLeft = 0;
+
+				return;
+			}
+		}
+
+		while(ItemsLeft > MaxItemStackCount)
+		{
+			AddItem(InventoryItemInstance->GetItemStaticData()->GetClass());
+
+
+			for(FGameplayTag InventoryTag : InventoryItemInstance->GetItemStaticData()->InventoryTags)
+			{
+				InventoryTags.AddTagCount(InventoryTag, MaxItemStackCount);
+			}
+
+			ItemsLeft -= MaxItemStackCount;
+			InventoryItemInstance->AddItem(-MaxItemStackCount);
+		}
+
 		InventoryList.AddItem(InventoryItemInstance);
+
+		for(FGameplayTag InventoryTag : InventoryItemInstance->GetItemStaticData()->InventoryTags)
+		{
+			InventoryTags.AddTagCount(InventoryTag, InventoryItemInstance->GetQuantity());
+		}
+	}
+}
+
+void UInventoryComponent::RemoveItemInstance(UInventoryItemInstance* InItemInstance)
+{
+	if(GetOwner()->HasAuthority())
+	{
+		InventoryList.RemoveItem(InItemInstance);
+
+		for(FGameplayTag InventoryTag : InItemInstance->GetItemStaticData()->InventoryTags)
+		{
+			InventoryTags.AddTagCount(InventoryTag, -InItemInstance->GetQuantity());
+		}
+	}
+}
+
+void UInventoryComponent::RemoveItemWithInventoryTag(FGameplayTag Tag, int32 Count)
+{
+	if(GetOwner()->HasAuthority())
+	{
+		int32 CountLeft = Count;
+
+		TArray<UInventoryItemInstance*> Items = GetAllInstancesWithTags(Tag);
+
+		Algo::Sort(Items, [](const UInventoryItemInstance* InA, const UInventoryItemInstance* InB)
+		{
+			return InA->GetQuantity() < InB->GetQuantity();
+		});
+
+		for(auto& Item : Items)
+		{
+			int32 AvailableCount = Item->GetQuantity();
+			int32 ItemsToRemove = CountLeft;
+
+			if(ItemsToRemove >= AvailableCount)
+			{
+				ItemsToRemove = AvailableCount;
+
+				RemoveItemInstance(Item);
+			}
+			else
+			{
+				Item->AddItem(-ItemsToRemove);
+
+				for(FGameplayTag InventoryTag : Item->GetItemStaticData()->InventoryTags)
+				{
+					InventoryTags.AddTagCount(InventoryTag, -ItemsToRemove);
+				}
+			}
+
+			CountLeft -= ItemsToRemove;
+		}
 	}
 }
 
@@ -224,6 +337,16 @@ void UInventoryComponent::GameplayEventCallback(const FGameplayEventData* Payloa
 	}
 }
 
+int32 UInventoryComponent::GetInventoryTagCount(FGameplayTag InTag) const
+{
+	return InventoryTags.GetTagCount(InTag);
+}
+
+void UInventoryComponent::AddInventoryTagCount(FGameplayTag InTag, int32 CountDelta)
+{
+	InventoryTags.AddTagCount(InTag, CountDelta);
+}
+
 // Called when the game starts
 void UInventoryComponent::BeginPlay()
 {
@@ -243,6 +366,15 @@ void UInventoryComponent::AddInventoryTags()
 	UInventoryComponent::UnEquipTag = TagsManager.AddNativeGameplayTag(TEXT("Event.Inventory.UnEquip"), TEXT("Unequip current item"));
 
 	TagsManager.OnLastChanceToAddNativeTags().RemoveAll(this);
+}
+
+TArray<UInventoryItemInstance*> UInventoryComponent::GetAllInstancesWithTags(FGameplayTag InTag)
+{
+	TArray<UInventoryItemInstance*> OutInstances;
+
+	OutInstances = InventoryList.GetAllInstancesWithTag(InTag);
+
+	return OutInstances;
 }
 
 void UInventoryComponent::HandleGameplayEventInternal(FGameplayEventData Payload)
@@ -305,6 +437,13 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 			{
 				GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Blue, FString::Printf(TEXT("Item : %s"), *ItemStaticData->Name.ToString()));
 			}
+		}
+
+		const TArray<FFastArrayTagCounterRecord>& InventoryTagArray = InventoryTags.GetTagArray();
+
+		for(auto& TagRecord : InventoryTagArray)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Purple, FString::Printf(TEXT("Tag: %s %d"), *TagRecord.Tag.ToString(), TagRecord.Count));
 		}
 	}
 }

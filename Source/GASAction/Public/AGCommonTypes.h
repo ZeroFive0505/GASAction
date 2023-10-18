@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
+#include "NiagaraSystem.h"
 #include "AGCommonTypes.generated.h"
 
 USTRUCT(BlueprintType)
@@ -89,6 +91,12 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TArray<TSubclassOf<UGameplayEffect>> OnGoingEffects;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TArray<FGameplayTag> InventoryTags;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	int32 MaxStackCount = 1;
 };
 
 UCLASS(BlueprintType, Blueprintable)
@@ -117,4 +125,57 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	USoundBase* AttackSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FGameplayTag AmmoTag;
+};
+
+UCLASS(BlueprintType, Blueprintable)
+class UAmmoItemStaticData : public UItemStaticData
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UStaticMesh* StaticMesh = nullptr;
+};
+
+UCLASS(BlueprintType, Blueprintable)
+class UProjectileStaticData : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float BaseDamage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float DamageRadius;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float GravityMultiplier = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float InitialSpeed = 3000.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float MaxSpeed = 3000.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UStaticMesh* StaticMesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TArray<TSubclassOf<UGameplayEffect>> Effects;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TArray<TEnumAsByte<EObjectTypeQuery>> RadialDamageQueryType;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TEnumAsByte<ETraceTypeQuery> RadialDamageTraceType;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UNiagaraSystem* OnStopVFX = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	USoundBase* OnStopSFX = nullptr;
 };

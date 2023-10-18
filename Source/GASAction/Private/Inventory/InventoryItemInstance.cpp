@@ -12,9 +12,10 @@
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
 
-void UInventoryItemInstance::Init(TSubclassOf<UItemStaticData> InItemStaticDataClass)
+void UInventoryItemInstance::Init(TSubclassOf<UItemStaticData> InItemStaticDataClass, int32 InQuantity)
 {
 	ItemStaticDataClass = InItemStaticDataClass;
+	Quantity = InQuantity;
 }
 
 void UInventoryItemInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -24,6 +25,7 @@ void UInventoryItemInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 	DOREPLIFETIME(UInventoryItemInstance, ItemStaticDataClass);
 	DOREPLIFETIME(UInventoryItemInstance, bEquipped);
 	DOREPLIFETIME(UInventoryItemInstance, ItemActor);
+	DOREPLIFETIME(UInventoryItemInstance, Quantity);
 }
 
 const UItemStaticData* UInventoryItemInstance::GetItemStaticData() const
@@ -93,6 +95,16 @@ void UInventoryItemInstance::OnDropped(AActor* InOwner)
 	TryRemoveEffects(InOwner);
 
 	bEquipped = false;
+}
+
+void UInventoryItemInstance::AddItem(int32 Count)
+{
+	Quantity += Count;
+
+	if(Quantity < 0)
+	{
+		Quantity = 0;
+	}
 }
 
 void UInventoryItemInstance::TryGrantAbilities(AActor* InOwner)

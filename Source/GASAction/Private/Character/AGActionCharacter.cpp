@@ -12,6 +12,7 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemLog.h"
+#include "GameplayEffectExtension.h"
 #include "Ability/AGAttributeSetBase.h"
 #include "Ability/AGAbilitySystemComponentBase.h"
 #include "ActorComponent/AGCharacterMovementComponent.h"
@@ -206,6 +207,22 @@ void AAGActionCharacter::OnAttackEnded(const FInputActionValue& Value)
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, AttackEndTag, EventData);
 }
 
+void AAGActionCharacter::OnAimActionStarted(const FInputActionValue& Value)
+{
+	FGameplayEventData EventData;
+	EventData.EventTag = AimStartedEventTag;
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, AimStartedEventTag, EventData);
+}
+
+void AAGActionCharacter::OInAimActionEnded(const FInputActionValue& Value)
+{
+	FGameplayEventData EventData;
+	EventData.EventTag = AimEndedEventTag;
+
+	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, AimEndedEventTag, EventData);
+}
+
 AAGActionCharacter::AAGActionCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UAGCharacterMovementComponent>(
 		ACharacter::CharacterMovementComponentName))
@@ -255,6 +272,10 @@ AAGActionCharacter::AAGActionCharacter(const FObjectInitializer& ObjectInitializ
 	AttributeSet = CreateDefaultSubobject<UAGAttributeSetBase>(TEXT("AttributSet"));
 
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetMovementSpeedAttribute()).AddUObject(this, &AAGActionCharacter::OnMovementSpeedChanged);
+	
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute()).AddUObject(this, &AAGActionCharacter::OnHealthAttributeChanged);
+
+	AbilitySystemComponent->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTag(TEXT("State.RagDoll"), EGameplayTagEventType::NewOrRemoved)).AddUObject(this, &AAGActionCharacter::OnRagDollStateChanged);
 
 	FootStepComponent = CreateDefaultSubobject<UFootStepComponent>(TEXT("FootStepComponent"));
 
@@ -318,6 +339,14 @@ void AAGActionCharacter::InitFromCharacterData(const FCharacterData& InCharacter
 {
 }
 
+void AAGActionCharacter::OnRagDollStateChanged(const FGameplayTag CallbackTag, int32 NewCount)
+{
+	if(NewCount > 0)
+	{
+		StartRagDoll();
+	}
+}
+
 FCharacterData AAGActionCharacter::GetCharacterData() const
 {
 	return CharacterData;
@@ -333,6 +362,40 @@ void AAGActionCharacter::SetCharacterData(const FCharacterData& InCharacterData)
 void AAGActionCharacter::OnMovementSpeedChanged(const FOnAttributeChangeData& Data)
 {
 	GetCharacterMovement()->MaxWalkSpeed = Data.NewValue;
+}
+
+void AAGActionCharacter::OnHealthAttributeChanged(const FOnAttributeChangeData& Data)
+{
+	if(Data.NewValue <= 0 && Data.OldValue > 0)
+	{
+		AAGActionCharacter* OtherCharacter = nullptr;
+
+		if(Data.GEModData)
+		{
+			const FGameplayEffectContextHandle& EffectContextHandle = Data.GEModData->EffectSpec.GetEffectContext();
+			OtherCharacter = Cast<AAGActionCharacter>(EffectContextHandle.GetInstigator());
+		}
+
+		FGameplayEventData EventData;
+		EventData.EventTag = ZeroHealthEventTag;
+
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, ZeroHealthEventTag, EventData);
+	}
+}
+
+void AAGActionCharacter::StartRagDoll()
+{
+	USkeletalMeshComponent* SkeletalMeshComponent = GetMesh();
+	
+	if(SkeletalMeshComponent && !SkeletalMeshComponent->IsSimulatingPhysics())
+	{
+		SkeletalMeshComponent->SetCollisionProfileName(TEXT("RagDoll"));
+		SkeletalMeshComponent->SetSimulatePhysics(true);
+		SkeletalMeshComponent->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
+		SkeletalMeshComponent->SetAllPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+		SkeletalMeshComponent->WakeAllRigidBodies();
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 }
 
 bool AAGActionCharacter::ApplyGameplayEffectToSelf(TSubclassOf<UGameplayEffect> Effect,
@@ -409,6 +472,10 @@ void AAGActionCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 		// Attack
 		EnhancedInputComponent->BindAction(AttackInputAction, ETriggerEvent::Started, this, &AAGActionCharacter::OnAttackStarted);
 		EnhancedInputComponent->BindAction(AttackInputAction, ETriggerEvent::Completed, this, &AAGActionCharacter::OnAttackEnded);
+
+		// Aim
+		EnhancedInputComponent->BindAction(AimInputAction, ETriggerEvent::Started, this, &AAGActionCharacter::OnAimActionStarted);
+		EnhancedInputComponent->BindAction(AimInputAction, ETriggerEvent::Completed, this, &AAGActionCharacter::OInAimActionEnded);
 	}
 }
 
